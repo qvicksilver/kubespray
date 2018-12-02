@@ -11,3 +11,7 @@
   delegate_to: "{{ groups['kube-master'][0] }}"
 
 - include_tasks: install.yml
+  when: container_manager != "containerd"
+
+- include_tasks: install_containerd.yml
+  when: container_manager == "containerd"

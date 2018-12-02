@@ -1,0 +1,26 @@
+---
+- name: containerd | Install required packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libseccomp2
+    - ethtool
+
+- name: containerd | Download release tarball
+  get_url:
+    url: https://storage.googleapis.com/cri-containerd-release/cri-containerd-cni-1.2.0.linux-amd64.tar.gz
+    checksum: sha256:23b710057876ed5a619af2c190ca95200647e066764d37f7b4729b13c5168a31
+    dest: /tmp
+
+- name: containerd | Unpack release tarball
+  unarchive:
+    src: /tmp/cri-containerd-cni-1.2.0.linux-amd64.tar.gz
+    dest: /
+    remote_src: true
+    creates: /etc/systemd/system/containerd.service
+
+- name: containerd | Start containerd
+  systemd:
+    name: containerd
+    state: started

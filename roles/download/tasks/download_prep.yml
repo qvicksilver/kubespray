@@ -1,4 +1,10 @@
 ---
+- name: container_download | Qualify repo names
+  set_fact:
+    nginx_image_repo: "registry.hub.docker.com/library/{{ nginx_image_repo }}"
+    coredns_image_repo: "registry.hub.docker.com/{{ coredns_image_repo }}"
+  when: container_manager == "containerd"
+
 - name: Register docker images info
   shell: >-
     {{ docker_bin_dir }}/docker images -q | xargs {{ docker_bin_dir }}/docker inspect -f "{{ '{{' }} (index .RepoTags 0) {{ '}}' }},{{ '{{' }} (index .RepoDigests 0) {{ '}}' }}" | tr '\n' ','
