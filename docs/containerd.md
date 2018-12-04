@@ -9,7 +9,6 @@ Only tested on Ubuntu 18.04, will only work with Debian-based distros.
 * containerd is supported kubernetes 1.11.1 or later.
 * helm and other feature may not be supported due to docker dependency.
 * scale.yml and upgrade-cluster.yml are not supported.
-* calico is the only supported network plugin
 
 Use containerd instead of docker, set following variable:
 
