@@ -184,7 +184,7 @@ kube_router_image_repo: "cloudnativelabs/kube-router"
 kube_router_image_tag: "{{ kube_router_version }}"
 multus_image_repo: "docker.io/nfvpe/multus"
 multus_image_tag: "{{ multus_version }}"
-nginx_image_repo: "{% if container_manager == 'containerd' %}registry.hub.docker.com/library/{% endif %}nginx"
+nginx_image_repo: "nginx"
 nginx_image_tag: 1.13
 dnsmasq_version: 2.78
 dnsmasq_image_repo: "andyshinn/dnsmasq"
@@ -194,7 +194,7 @@ kubedns_image_repo: "gcr.io/google_containers/k8s-dns-kube-dns-{{ image_arch }}"
 kubedns_image_tag: "{{ kubedns_version }}"
 
 coredns_version: "1.2.6"
-coredns_image_repo: "{% if container_manager == 'containerd' %}registry.hub.docker.com/{% endif %}coredns/coredns"
+coredns_image_repo: "coredns/coredns"
 coredns_image_tag: "{{ coredns_version }}"
 
 nodelocaldns_version: "1.15.0"

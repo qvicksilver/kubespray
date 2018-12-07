@@ -43,7 +43,7 @@
     - container_manager != "containerd"
 
 - name: container_download | Download containers if pull is required or told to always pull (all nodes)
-  command: "/usr/local/bin/ctr images pull {{ pull_args }}"
+  command: "/usr/local/bin/crictl pull {{ pull_args }}"
   register: pull_task_result
   until: pull_task_result is succeeded
   retries: 4
