@@ -28,4 +28,5 @@
 - include_tasks: kubeadm_images.yml
   when:
     - not skip_downloads|default(false)
+    - not skip_kubeadm_images|default(false)
     - inventory_hostname in groups['kube-master']

@@ -12,8 +12,9 @@
     name: download
   vars:
     download_container: false
+    skip_kubeadm_images: true
 
-- name: containerd | Unpack release tarball
+- name: containerd | Unpack containerd release tarball
   unarchive:
     src: "{{ local_release_dir }}/cri-containerd-cni-{{ containerd_version }}.linux-amd64.tar.gz"
     dest: /
@@ -24,3 +25,9 @@
   systemd:
     name: containerd
     state: started
+
+- name: containerd | Unpack crictl release tarball
+  unarchive:
+    src: "{{ local_release_dir }}/crictl-{{ crictl_version }}-linux-amd64.tar.gz"
+    dest: /usr/local/bin
+    remote_src: true
