@@ -20,8 +20,8 @@
     dest: "/{{ item }}"
     remote_src: yes
   with_items:
-  - etc/crictl.yaml
-  - etc/systemd/system/containerd.service
+    - etc/crictl.yaml
+    - etc/systemd/system/containerd.service
 
 - name: containerd | Copy containerd binaries from download dir
   copy:
@@ -30,12 +30,12 @@
     mode: 0755
     remote_src: yes
   with_items:
-  - usr/local/bin/crictl
-  - usr/local/bin/containerd
-  - usr/local/bin/containerd-shim
-  - usr/local/bin/ctr
-  - usr/local/bin/containerd-shim-runc-v1
-  - usr/local/sbin/runc
+    - usr/local/bin/crictl
+    - usr/local/bin/containerd
+    - usr/local/bin/containerd-shim
+    - usr/local/bin/ctr
+    - usr/local/bin/containerd-shim-runc-v1
+    - usr/local/sbin/runc
 
 - name: containerd | Start containerd
   systemd:
