@@ -412,7 +412,7 @@ downloads:
     owner: "root"
     groups:
       - k8s-cluster
- 
+
   calico_cni_ipam:
     enabled: "{{ (kube_network_plugin == 'calico' or kube_network_plugin == 'canal') and container_manager == 'containerd' }}"
     file: true
