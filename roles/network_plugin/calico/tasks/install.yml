@@ -32,6 +32,20 @@
     owner: root
     group: root
   changed_when: false
+  when:
+    - container_manager != 'containerd'
+
+- name: Calico | Install calicoctl binary
+  copy:
+    src: "{{ local_release_dir }}/calicoctl"
+    dest: "{{ bin_dir }}/calicoctl"
+    mode: 0755
+    owner: root
+    group: root
+    remote_src: true
+  changed_when: false
+  when:
+    - container_manager == 'containerd'
 
 - name: Calico | Set cni directory permissions
   file:
@@ -57,9 +71,22 @@
   changed_when: false
   when:
     - "overwrite_hyperkube_cni|bool"
+    - container_manager != 'containerd'
   tags:
     - hyperkube
     - upgrade
+
+- name: Calico | Copy calico cni plugins
+  copy:
+    src: "{{ local_release_dir }}/{{ item }}"
+    dest: "/opt/cni/bin"
+    mode: 0755
+    remote_src: true
+  with_items:
+    - calico
+    - calico-ipam
+  when:
+    - container_manager == 'containerd'
 
 - name: Calico | wait for etcd
   uri:
@@ -76,6 +103,11 @@
 - name: Calico | Check if calico network pool has already been configured
   shell: >
     {{ bin_dir }}/calicoctl get ippool | grep -w "{{ kube_pods_subnet }}" | wc -l
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   register: calico_conf
   retries: 4
   delay: "{{ retry_stagger | random + 3 }}"
@@ -94,6 +126,11 @@
           "cidr": "{{ kube_pods_subnet }}",
           "ipipMode": "{{ ipip_mode }}",
           "natOutgoing": {{ nat_outgoing|default(false) and not peer_with_router|default(false) }} }} " | {{ bin_dir }}/calicoctl create -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   run_once: true
   delegate_to: "{{ groups['kube-master'][0] }}"
   when:
@@ -137,6 +174,11 @@
         "logSeverityScreen": "Info",
         "nodeToNodeMeshEnabled": {{ nodeToNodeMeshEnabled|default('true') }} ,
         "asNumber": {{ global_as_num }} }} ' | {{ bin_dir }}/calicoctl create --skip-exists -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   run_once: true
   delegate_to: "{{ groups['kube-master'][0] }}"
   when:
@@ -169,6 +211,11 @@
       },
       "orchRefs":[{"nodeName":"{{ inventory_hostname }}","orchestrator":"k8s"}]
    }}' | {{ bin_dir }}/calicoctl create --skip-exists -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   retries: 4
   delay: "{{ retry_stagger | random + 3 }}"
   when:
@@ -214,6 +261,11 @@
       "node": "{{ inventory_hostname }}",
       "peerIP": "{{ item.router_id }}"
    }}' | {{ bin_dir }}/calicoctl create --skip-exists -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   retries: 4
   delay: "{{ retry_stagger | random + 3 }}"
   with_items:
@@ -252,6 +304,11 @@
       "asNumber": "{{ item.as }}",
       "peerIP": "{{ item.router_id }}"
    }}' | {{ bin_dir }}/calicoctl create --skip-exists -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   retries: 4
   delay: "{{ retry_stagger | random + 3 }}"
   with_items:
@@ -293,6 +350,11 @@
       "node": "{{ inventory_hostname }}",
       "peerIP": "{{ hostvars[item]["calico_rr_ip"]|default(hostvars[item]["ip"])|default(hostvars[item]["ansible_default_ipv4"]["address"]) }}"
    }}' | {{ bin_dir }}/calicoctl create --skip-exists -f -
+  environment:
+    ETCD_ENDPOINTS: "{{ etcd_access_addresses }}"
+    ETCD_CA_CERT_FILE: "{{ calico_cert_dir }}/ca_cert.crt"
+    ETCD_CERT_FILE: "{{ calico_cert_dir }}/cert.crt"
+    ETCD_KEY_FILE: "{{ calico_cert_dir }}/key.pem"
   retries: 4
   delay: "{{ retry_stagger | random + 3 }}"
   with_items:
