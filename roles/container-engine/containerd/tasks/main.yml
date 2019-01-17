@@ -14,20 +14,30 @@
     download_container: false
     skip_kubeadm_images: true
 
-- name: containerd | Unpack containerd release tarball
-  unarchive:
-    src: "{{ local_release_dir }}/cri-containerd-cni-{{ containerd_version }}.linux-amd64.tar.gz"
-    dest: /
-    remote_src: true
-    creates: /etc/systemd/system/containerd.service
+- name: containerd | Copy containerd configuration files from download dir
+  copy:
+    src: "{{ local_release_dir }}/{{ item }}"
+    dest: "/{{ item }}"
+    remote_src: yes
+  with_items:
+  - etc/crictl.yaml
+  - etc/systemd/system/containerd.service
+
+- name: containerd | Copy containerd binaries from download dir
+  copy:
+    src: "{{ local_release_dir }}/{{ item }}"
+    dest: "/{{ item }}"
+    mode: 0755
+    remote_src: yes
+  with_items:
+  - usr/local/bin/crictl
+  - usr/local/bin/containerd
+  - usr/local/bin/containerd-shim
+  - usr/local/bin/ctr
+  - usr/local/bin/containerd-shim-runc-v1
+  - usr/local/sbin/runc
 
 - name: containerd | Start containerd
   systemd:
     name: containerd
     state: started
-
-- name: containerd | Unpack crictl release tarball
-  unarchive:
-    src: "{{ local_release_dir }}/crictl-{{ crictl_version }}-linux-amd64.tar.gz"
-    dest: /usr/local/bin
-    remote_src: true

@@ -38,8 +38,7 @@ image_arch: "{{host_architecture | default('amd64')}}"
 kube_version: v1.13.2
 kubeadm_version: "{{ kube_version }}"
 etcd_version: v3.2.24
-containerd_version: 1.2.0
-crictl_version: v1.13.0
+containerd_version: 1.2.1
 
 # kubernetes image repo define
 kube_image_repo: "gcr.io/google-containers"
@@ -70,7 +69,6 @@ hyperkube_download_url: "https://storage.googleapis.com/kubernetes-release/relea
 etcd_download_url: "https://github.com/coreos/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ image_arch }}.tar.gz"
 cni_download_url: "https://github.com/containernetworking/plugins/releases/download/{{ cni_version }}/cni-plugins-{{ image_arch }}-{{ cni_version }}.tgz"
 containerd_download_url: "https://storage.googleapis.com/cri-containerd-release/cri-containerd-cni-{{ containerd_version }}.linux-amd64.tar.gz"
-crictl_download_url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ crictl_version }}/crictl-{{ crictl_version }}-linux-amd64.tar.gz"
 
 # Checksums
 hyperkube_checksums:
@@ -123,8 +121,7 @@ kubeadm_checksums:
   v1.10.0: ebbac985834289037b544523c3e2f39bb44bea938aca9d9e88ef7e880fb8472f
 containerd_checksums:
   1.2.0: 23b710057876ed5a619af2c190ca95200647e066764d37f7b4729b13c5168a31
-crictl_checksums:
-  v1.13.0: 9bdbea7a2b382494aff2ff014da328a042c5aba9096a7772e57fdf487e5a1d51
+  1.2.1: 93f9061ef1fbc781b88ff4afb8591a059b39c8bbe8f47fd49fe889a4e769b1cf
 
 etcd_binary_checksum: 947849dbcfa13927c81236fb76a7c01d587bbab42ab1e807184cd91b026ebed7
 cni_binary_checksum: f04339a21b8edf76d415e7f17b620e63b8f37a76b2f706671587ab6464411f2d
@@ -132,7 +129,6 @@ cni_binary_checksum: f04339a21b8edf76d415e7f17b620e63b8f37a76b2f706671587ab64644
 hyperkube_binary_checksum: "{{ hyperkube_checksums[kube_version] }}"
 kubeadm_binary_checksum: "{{ kubeadm_checksums[kubeadm_version] }}"
 containerd_binary_checksum: "{{ containerd_checksums[containerd_version] }}"
-crictl_binary_checksum: "{{ crictl_checksums[crictl_version] }}"
 
 # Containers
 # In some cases, we need a way to set --registry-mirror or --insecure-registry for docker,
@@ -677,23 +673,10 @@ downloads:
     enabled: "{{ container_manager == 'containerd' }}"
     file: true
     version: "{{ containerd_version }}"
-    dest: "{{local_release_dir}}/"
+    dest: "{{local_release_dir}}/cri-containerd-cni-{{ containerd_version }}.linux-amd64.tar.gz"
     sha256: "{{ containerd_binary_checksum }}"
     url: "{{ containerd_download_url }}"
-    unarchive: false
-    owner: "root"
-    mode: "0755"
-    groups:
-      - k8s-cluster
-
-  crictl:
-    enabled: "{{ container_manager == 'containerd' }}"
-    file: true
-    version: "{{ crictl_version }}"
-    dest: "{{local_release_dir}}/"
-    sha256: "{{ crictl_binary_checksum }}"
-    url: "{{ crictl_download_url }}"
-    unarchive: false
+    unarchive: true
     owner: "root"
     mode: "0755"
     groups:
