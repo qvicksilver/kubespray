@@ -1,0 +1,21 @@
+---
+- name: container-runtime kata | Add repo
+  shell:
+    echo "deb http://download.opensuse.org/repositories/home:/katacontainers:/releases:/{{ ansible_architecture }}:/master/xUbuntu_$(lsb_release -rs)/ /" > /etc/apt/sources.list.d/kata-containers.list
+
+- name: container-runtime kata | Add signing key
+  shell:
+    curl -sL  http://download.opensuse.org/repositories/home:/katacontainers:/releases:/${ARCH}:/${BRANCH}/xUbuntu_$(lsb_release -rs)/Release.key | sudo apt-key add -
+  environment:
+    BRANCH: master
+    ARCH: "{{ ansible_architecture }}"
+
+- name: container-runtime kata | Install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - kata-runtime
+    - kata-proxy
+    - kata-shim

@@ -1,0 +1,83 @@
+---
+- name: container-runtime | Install packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - genisoimage
+    - git
+    - golang
+    - go-dep
+    - libseccomp-dev
+    - make
+
+#- name: Install golang
+#  get_url:
+#      url: https://dl.google.com/go/go1.11.linux-amd64.tar.gz
+#      dest: /tmp
+#- name: Unpack go
+#  unarchive:
+#      src: /tmp/go1.11.linux-amd64.tar.gz
+#      dest: /usr/local
+#      remote_src: true
+
+- name: Create GOPATH
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /tmp/go
+    - /usr/local/go
+
+- name: Get go packages
+  command: go get github.com/nabla-containers/runnc
+  environment:
+    GOPATH: /tmp/go
+    PATH: "/tmp/go/bin:{{ ansible_env.PATH }}"
+  ignore_errors: true
+
+  #- name: Install genisoimage
+  #  apt:
+  #      name: genisoimage
+  #      state: present
+
+- name: Build and install runnc
+  shell:
+    make build && make install
+  environment:
+    GOPATH: /tmp/go
+    PATH: "/tmp/go/bin:{{ ansible_env.PATH }}"
+  args:
+    chdir: /tmp/go/src/github.com/nabla-containers/runnc
+
+- name: Create containerd config directory
+  file:
+    path: /etc/containerd
+    state: directory
+
+- name: Configure containerd for runnc runtime
+  template:
+    src: config.toml.j2
+    dest: /etc/containerd/config.toml
+  when: container_manager == "containerd"
+
+- name: Restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+  when: container_manager == "containerd"
+
+    #- name: Build runnc
+    #  shell: make container-build
+    #  args:
+    #    chdir: /tmp/go/src/github.com/nabla-containers/runnc
+
+    #- name: Install runnc
+    #  shell: make container-install
+    #  args:
+    #    chdir: /tmp/go/src/github.com/nabla-containers/runnc
+
+      #- name: Install libseccomp-dev
+      #  apt:
+      #      name: libseccomp-dev
+      #      state: present

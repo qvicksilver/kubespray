@@ -1,0 +1,26 @@
+[plugins]
+{% if "runsc" in additional_container_runtimes %}
+  [plugins.linux]
+    shim = "/usr/local/bin/gvisor-containerd-shim"
+    shim_debug = true
+{% endif %}
+  [plugins.cri.containerd]
+    [plugins.cri.containerd.runtimes]
+      [plugins.cri.containerd.runtimes.runc]
+        runtime_type = "io.containerd.runc.v1"
+{% if "runnc" in additional_container_runtimes %}
+      [plugins.cri.containerd.runtimes.runnc]
+        runtime_type = "io.containerd.runtime.v1.linux"
+        runtime_engine = "/usr/local/bin/runnc"
+{% endif %}
+{% if "runsc" in additional_container_runtimes %}
+      [plugins.cri.containerd.runtimes.runsc]
+        runtime_type = "io.containerd.runtime.v1.linux"
+        runtime_engine = "/usr/local/bin/runsc"
+        runtime_root = "/run/containerd/runsc"
+{% endif %}
+{% if "kata" in additional_container_runtimes %}
+      [plugins.cri.containerd.runtimes.kata]
+        runtime_type = "io.containerd.kata.v2"
+{% endif %}
+

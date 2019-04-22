@@ -1,0 +1,42 @@
+---
+- include_tasks: runnc.yml
+  when: '"runnc" in additional_container_runtimes'
+- include_tasks: runsc.yml
+  when: '"runsc" in additional_container_runtimes'
+- include_tasks: kata.yml
+  when: '"kata" in additional_container_runtimes'
+
+- name: Create RuntimeClass manifest
+  copy:
+    src: files/rtc.yml
+    dest: "{{ kube_config_dir }}"
+  when: 
+    - additional_container_runtimes
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Create RuntimeClass definitions
+  copy:
+    src: "files/{{ item }}.yml"
+    dest: "{{ kube_config_dir }}"
+  with_items: "{{ additional_container_runtimes }}"
+  when: 
+    - additional_container_runtimes
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Apply RuntimeClass manifest
+  kube:
+    file: "{{ kube_config_dir }}/rtc.yml"
+    kubectl: "{{ bin_dir }}/kubectl"
+  when:
+    - additional_container_runtimes
+    - inventory_hostname == groups['kube-master'][0]
+
+- name: Apply RuntimeClass definitions
+  kube:
+    file: "{{ kube_config_dir }}/{{ item }}.yml"
+    kubectl: "{{ bin_dir }}/kubectl"
+  with_items: "{{ additional_container_runtimes }}"
+  when:
+    - additional_container_runtimes
+    - inventory_hostname == groups['kube-master'][0]
+

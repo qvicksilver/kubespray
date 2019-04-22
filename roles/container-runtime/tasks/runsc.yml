@@ -1,0 +1,26 @@
+---
+- name: container-runtime runsc | Find latest shim release
+  shell: "wget -qO - https://api.github.com/repos/google/gvisor-containerd-shim/releases | grep -oP '(?<=\"browser_download_url\": \")https://[^\"]*gvisor-containerd-shim.linux-amd64' | head -1"
+  register: shim_release
+
+- name: container-runtime runsc | Download
+  get_url:
+    url: "{{ item }}"
+    dest: /usr/local/bin
+  with_items:
+    - https://storage.googleapis.com/gvisor/releases/nightly/latest/runsc
+    - https://storage.googleapis.com/gvisor/releases/nightly/latest/runsc.sha512
+    - "{{ shim_release.stdout }}"
+
+- name: container-runtime runsc | Fix shit
+  shell: mv /usr/local/bin/gvisor-containerd-shim.linux-amd64 /usr/local/bin/gvisor-containerd-shim
+
+      #- name: container-runtime runsc | Check
+
+- name: container-runtime runsc | Make executable
+  file:
+    path: "/usr/local/bin/{{ item }}"
+    mode: +x
+  with_items:
+    - runsc
+    - gvisor-containerd-shim
