@@ -1,0 +1,7 @@
+{
+  "CN": "kube-apiserver",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  }
+}

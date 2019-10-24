@@ -1,0 +1,80 @@
+---
+- hosts: localhost
+  gather_facts: false
+  become: no
+  tasks:
+    - name: "Check ansible version >=2.7.8"
+      assert:
+        msg: "Ansible must be v2.7.8 or higher"
+        that:
+          - ansible_version.string is version("2.7.8", ">=")
+      tags:
+        - check
+  vars:
+    ansible_connection: local
+
+- hosts: localhost
+  gather_facts: false
+  become: no
+  roles:
+    - { role: kubespray-defaults}
+  tasks:
+    - name: Check for CFSSL
+      shell: command -v cfssl >/dev/null 2>&1
+      register: has_cfssl
+      ignore_errors: yes
+      tags:
+        - check
+    - name: Fail if CFSSL is missing
+      assert:
+        msg: "CFSSL is needed to rotate the CA"
+        that:
+          - has_cfssl.rc == 0
+      tags:
+        - check
+    - name: Aggregate all SANs
+      set_fact:
+        apiserver_sans: "{{ (sans_base + groups['kube-master'] + sans_lb + sans_lb_ip + sans_supp + sans_access_ip + sans_ip + sans_address + sans_override + sans_hostname + sans_fqdn) | unique }}"
+      vars:
+        sans_base:
+          - "kubernetes"
+          - "kubernetes.default"
+          - "kubernetes.default.svc"
+          - "kubernetes.default.svc.{{ dns_domain }}"
+          - "{{ kube_apiserver_ip }}"
+          - "localhost"
+          - "127.0.0.1"
+        sans_lb: "{{ [apiserver_loadbalancer_domain_name] if apiserver_loadbalancer_domain_name is defined else [] }}"
+        sans_lb_ip: "{{ [loadbalancer_apiserver.address] if loadbalancer_apiserver is defined and loadbalancer_apiserver.address is defined else [] }}"
+        sans_supp: "{{ supplementary_addresses_in_ssl_keys if supplementary_addresses_in_ssl_keys is defined else [] }}"
+        sans_access_ip: "{{ groups['kube-master'] | map('extract', hostvars, 'access_ip') | list | select('defined') | list }}"
+        sans_ip: "{{ groups['kube-master'] | map('extract', hostvars, 'ip') | list | select('defined') | list }}"
+        sans_address: "{{ groups['kube-master'] | map('extract', hostvars, ['ansible_default_ipv4', 'address']) | list | select('defined') | list }}"
+        sans_override: "{{ [kube_override_hostname] if kube_override_hostname else [] }}"
+        sans_hostname: "{{ groups['kube-master'] | map('extract', hostvars, ['ansible_hostname']) | list | select('defined') | list }}"
+        sans_fqdn: "{{ groups['kube-master'] | map('extract', hostvars, ['ansible_fqdn']) | list | select('defined') | list }}"
+      tags: facts
+    - name: Generate CA
+      shell: cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+    - name: Generate admin certificate
+      shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes admin-csr.json | cfssljson -bare admin
+    - name: Generate kubelet client CSR:s
+      template:
+        src: node-csr.json.j2
+        dest: "{{ item }}-csr.json"
+      with_items: "{{ groups['all'] }}"
+    - name: Generate kubelet client certificates
+      shell: "cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes {{ item }}-csr.json | cfssljson -bare {{ item }}"
+      with_items: "{{ groups['all'] }}"
+    - name: Generate kube-apiserver-kubelet-client certificate
+      shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes kube-apiserver-kubelet-client-csr.json | cfssljson -bare kube-apiserver-kubelet-client
+    - name: Generate kube-controller-manager certificate
+      shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes kube-controller-manager-csr.json | cfssljson -bare kube-controller-manager
+    - name: Generate kube-scheduler certificate
+      shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=kubernetes kube-scheduler-csr.json | cfssljson -bare kube-scheduler 
+    - debug:
+        msg: "{{ apiserver_sans }}"
+    - name: Generate kube-apiserver certificate
+      shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname="{% for san in apiserver_sans %}{{ san }}{% if not loop.last %},{% endif %}{% endfor %}" -profile=kubernetes kube-apiserver-csr.json | cfssljson -bare kubernetes
+  vars:
+    ansible_connection: local
